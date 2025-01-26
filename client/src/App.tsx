@@ -1,110 +1,108 @@
-// import React, { useEffect, useRf } from "react";
-// import * as CANNON from "cannon-es";
-// import * as THREE from "three";
-import { useRef } from "react";
-import * as CANNON from "cannon-es";
-import {Demo}  from "./js/Demo";
-// import * as THREE from "three";
+import type { CylinderArgs, CylinderProps, PlaneProps } from '@react-three/cannon'
+import { Debug, Physics, useCylinder, usePlane } from '@react-three/cannon'
+import { Environment, OrbitControls } from '@react-three/drei'
+import { Canvas } from '@react-three/fiber'
+import { Suspense, useRef } from 'react'
+import type { Group, Mesh } from 'three'
+
+import { useToggledControl } from './use-toggled-control'
+import Vehicle from './RaycastVehicle/Vehicle'
+import { HideMouse, Keyboard } from './controls'
+
+function Plane(props: PlaneProps) {
+  const [ref] = usePlane(() => ({
+    material: 'ground',
+    type: 'Static',
+    ...props
+  }), useRef<Group>(null))
+  return (
+    <group ref={ref}>
+      <mesh receiveShadow>
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial color="#303030" />
+      </mesh>
+    </group>
+  )
+}
+
+
+function Pillar(props: CylinderProps) {
+  const args: CylinderArgs = [0.7, 0.7, 5, 16]
+  const [ref] = useCylinder(
+    () => ({
+      args,
+      mass: 10,
+      ...props,
+    }),
+    useRef<Mesh>(null),
+  )
+  return (
+    <mesh ref={ref} castShadow>
+      <cylinderGeometry args={args} />
+      <meshNormalMaterial />
+    </mesh>
+  )
+}
+
+const style = {
+  color: 'white',
+  fontSize: '1.2em',
+  left: 50,
+  position: 'absolute',
+  top: 20,
+} as const
+
 
 export function App(): JSX.Element {
-  // const containerRef = useRef(null);
 
-    // const demo = new Demo();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const setupWorld = (demo:any) => {
-      const world = demo.getWorld();
-      world.gravity.set(0, -10, 0);
-      world.broadphase = new CANNON.SAPBroadphase(world);
-      world.defaultContactMaterial.friction = 0;
-      return world;
-    };
-
-    // demo.addScene("Car", () => {
-    //   const world = setupWorld(demo);
-
-    //   // Create the car chassis
-    //   const chassisShape = new CANNON.Box(new CANNON.Vec3(2, 0.5, 1));
-    //   const chassisBody = new CANNON.Body({ mass: 150 });
-    //   chassisBody.addShape(chassisShape);
-    //   chassisBody.position.set(0, 4, 0);
-    //   chassisBody.angularVelocity.set(0, 0.5, 0);
-    //   demo.addVisual(chassisBody);
-
-    //   // Create the vehicle
-    //   const vehicle = new CANNON.RaycastVehicle({
-    //     chassisBody,
-    //   });
-
-    //   // const wheelOptions = {
-    //   //   radius: 0.5,
-    //   //   directionLocal: new CANNON.Vec3(0, -1, 0),
-    //   //   suspensionStiffness: 30,
-    //   //   suspensionRestLength: 0.3,
-    //   //   frictionSlip: 1.4,
-    //   //   dampingRelaxation: 2.3,
-    //   //   dampingCompression: 4.4,
-    //   //   maxSuspensionForce: 100000,
-    //   //   rollInfluence: 0.01,
-    //   //   axleLocal: new CANNON.Vec3(0, 0, 1),
-    //   //   chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, 1),
-    //   //   maxSuspensionTravel: 0.3,
-    //   //   customSlidingRotationalSpeed: -30,
-    //   //   useCustomSlidingRotationalSpeed: true,
-    //   // };
-
-    //   // Add wheels to the vehicle
-    //     // [-1, 1].forEach((x) => {
-    //     //   [-1, 1].forEach((z) => {
-    //     //     wheelOptions.chassisConnectionPointLocal.set(x, 0, z);
-    //     //     vehicle.addWheel(wheelOptions);
-    //     //   });
-    //     // });
-
-    //   vehicle.addToWorld(world);
-
-    //   // Add ground and define interactions
-    //   const sizeX = 64;
-    //   const sizeZ = 64;
-    //   const matrix = Array.from({ length: sizeX }, (_, i) =>
-    //     Array.from({ length: sizeZ }, (_, j) => {
-    //       if (i === 0 || i === sizeX - 1 || j === 0 || j === sizeZ - 1) {
-    //         return 3;
-    //       }
-    //       return (
-    //         Math.cos((i / sizeX) * Math.PI * 5) *
-    //           Math.cos((j / sizeZ) * Math.PI * 5) *
-    //           2 +
-    //         2
-    //       );
-    //     })
-    //   );
-
-    //   const groundMaterial = new CANNON.Material("ground");
-    //   const heightfieldShape = new CANNON.Heightfield(matrix, {
-    //     elementSize: 100 / sizeX,
-    //   });
-    //   const heightfieldBody = new CANNON.Body({ mass: 0, material: groundMaterial });
-    //   heightfieldBody.addShape(heightfieldShape);
-    //   heightfieldBody.position.set(
-    //     -(sizeX * heightfieldShape.elementSize) / 2,
-    //     -1,
-    //     (sizeZ * heightfieldShape.elementSize) / 2
-    //   );
-    //   heightfieldBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    //   world.addBody(heightfieldBody);
-    // //  demo.addVisual(heightfieldBody);
-    // });
-
-    // demo.start();
-
-    // return () => {
-    //   demo.dispose();
-    // };
-
-
-  return <div 
-    ///ref={containerRef} 
-    style={{ width: "100vw", height: "100vh" }} />;
+  const ToggledDebug = useToggledControl(Debug, '?')
+  return <>
+    <Canvas camera={{ fov: 50, position: [0, 5, 15] }} shadows>
+      <fog attach="fog" args={['#171720', 10, 50]} />
+      <color attach="background" args={['#171720']} />
+      <ambientLight intensity={0.1 * Math.PI} />
+      <spotLight
+        angle={0.5}
+        castShadow
+        decay={0}
+        intensity={Math.PI}
+        penumbra={1}
+        position={[10, 10, 10]}
+      />
+      <Physics
+        broadphase="SAP"
+        defaultContactMaterial={{
+          contactEquationRelaxation: 4,
+          friction: 1e-3
+        }}
+        allowSleep
+      >
+        <ToggledDebug>
+          <Plane position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]} userData={{ id: 'floor' }} />
+          <Vehicle
+          //position={[0, 2, 0]}
+          //rotation={[0, -Math.PI / 4, 0]}
+          //angularVelocity={[0, 0, 0]}
+          />
+          <Pillar position={[-5, 2.5, -5]} userData={{ id: 'pillar-1' }} />
+          <Pillar position={[0, 2.5, -5]} userData={{ id: 'pillar-2' }} />
+          <Pillar position={[5, 2.5, -5]} userData={{ id: 'pillar-3' }} />
+        </ToggledDebug>
+      </Physics>
+      <Suspense fallback={null}>
+        <Environment preset="night" />
+      </Suspense>
+      <OrbitControls />
+    </Canvas>
+    <HideMouse />
+    <Keyboard />
+    <div style={style}>
+      <pre>
+        * WASD to drive, space to brake
+        <br />r to reset
+        <br />? to debug
+      </pre>
+    </div>
+  </>
 }
 
