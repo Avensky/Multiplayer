@@ -20,7 +20,10 @@
 
       // Build the car chassis
       const chassisShape = new CANNON.Box(new CANNON.Vec3(2, 0.5, 1))
-      const chassisBody = new CANNON.Body({ mass: 150 })
+      const chassisBody = new CANNON.Body({
+        mass: 500,
+        rotation: new CANNON.Vec3(0, -Math.PI / 4, 0)
+      })
       chassisBody.addShape(chassisShape)
       chassisBody.position.set(0, 4, 0)
       chassisBody.angularVelocity.set(0, 0.5, 0)
@@ -28,37 +31,59 @@
 
       // Create the vehicle
       const vehicle = new CANNON.RaycastVehicle({
+        position: [0, -0.4, 0],
         chassisBody,
       })
 
+      // const back = -1.15
+      // const front = 1.3
+      // const height = -0.04
+      const force = 1500
+      const maxBrake = 50
+      const steer = 0.7
+      const radius = 0.7
+      // const width = 1.2
+
       const wheelOptions = {
-        radius: 0.5,
-        directionLocal: new CANNON.Vec3(0, -1, 0),
-        suspensionStiffness: 30,
-        suspensionRestLength: 0.3,
-        frictionSlip: 1.4,
-        dampingRelaxation: 2.3,
-        dampingCompression: 4.4,
-        maxSuspensionForce: 100000,
-        rollInfluence: 0.01,
-        axleLocal: new CANNON.Vec3(0, 0, 1),
-        chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, 1),
-        maxSuspensionTravel: 0.3,
+        directionLocal: new CANNON.Vec3(0, -1, 0), // set to same as Physics Gravity
+        axleLocal: new CANNON.Vec3(0, 0, 1), // This is inverted for asymmetrical
         customSlidingRotationalSpeed: -30,
+        dampingCompression: 4.4,
+        dampingRelaxation: 10,
+        frictionSlip: 2,
+        maxSuspensionForce: 1e4,
+        maxSuspensionTravel: 0.3,
+        radius,
+        suspensionRestLength: 0.3,
+        suspensionStiffness: 30,
         useCustomSlidingRotationalSpeed: true,
+        // rollInfluence: 0.01, // only in cannon-es
+        chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, 1)
+        // chassisConnectionPointLocal: new CANNON.Vec3(-width / 2, height, front)
       }
 
-      wheelOptions.chassisConnectionPointLocal.set(-1, 0, 1)
-      vehicle.addWheel(wheelOptions)
+      console.log(wheelOptions);
+      // wheelOptions.chassisConnectionPointLocal = new CANNON.Vec3(-width / 2, height, front);
+      // wheelOptions.isFrontWheel = true;
+      // vehicle.addWheel(wheelOptions);
 
-      wheelOptions.chassisConnectionPointLocal.set(-1, 0, -1)
-      vehicle.addWheel(wheelOptions)
+      // wheelOptions.chassisConnectionPointLocal = new CANNON.Vec3(-width / 2, height, -front)
+      // wheelOptions.isFrontWheel = true
+      // vehicle.addWheel(wheelOptions)
 
-      wheelOptions.chassisConnectionPointLocal.set(1, 0, 1)
-      vehicle.addWheel(wheelOptions)
+      // wheelOptions.chassisConnectionPointLocal = new CANNON.Vec3(width / 2, height, back)
+      // wheelOptions.isFrontWheel = false
+      // vehicle.addWheel(wheelOptions)
 
-      wheelOptions.chassisConnectionPointLocal.set(1, 0, -1)
-      vehicle.addWheel(wheelOptions)
+      // wheelOptions.chassisConnectionPointLocal = new CANNON.Vec3(width / 2, height, -back)
+      // wheelOptions.isFrontWheel = false
+      // vehicle.addWheel(wheelOptions)
+
+      vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, 1) }); // front left
+      vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, -1) }); // front right
+      vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new CANNON.Vec3(1, 0, 1) }); // rear left
+      vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new CANNON.Vec3(1, 0, -1) }); // rear right
+
 
       vehicle.addToWorld(world)
 
@@ -91,40 +116,53 @@
         }
       })
 
-      // Add the ground
-      const sizeX = 64
-      const sizeZ = 64
-      const matrix = []
-      for (let i = 0; i < sizeX; i++) {
-        matrix.push([])
-        for (let j = 0; j < sizeZ; j++) {
-          if (i === 0 || i === sizeX - 1 || j === 0 || j === sizeZ - 1) {
-            const height = 3
-            matrix[i].push(height)
-            continue
-          }
-
-          const height = Math.cos((i / sizeX) * Math.PI * 5) * Math.cos((j / sizeZ) * Math.PI * 5) * 2 + 2
-          matrix[i].push(height)
-        }
-      }
-
+      // Create ground material
       const groundMaterial = new CANNON.Material('ground')
-      const heightfieldShape = new CANNON.Heightfield(matrix, {
-        elementSize: 100 / sizeX,
-      })
-      const heightfieldBody = new CANNON.Body({ mass: 0, material: groundMaterial })
-      heightfieldBody.addShape(heightfieldShape)
-      heightfieldBody.position.set(
-        // -((sizeX - 1) * heightfieldShape.elementSize) / 2,
-        -(sizeX * heightfieldShape.elementSize) / 2,
-        -1,
-        // ((sizeZ - 1) * heightfieldShape.elementSize) / 2
-        (sizeZ * heightfieldShape.elementSize) / 2
-      )
-      heightfieldBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
-      world.addBody(heightfieldBody)
-      demo.addVisual(heightfieldBody)
+
+      // Create a ground plane
+      const ground = new CANNON.Body({
+        mass: 0, // Static object
+        material: groundMaterial, // Material
+        shape: new CANNON.Box(new CANNON.Vec3(50, 1, 50)) // Large ground box
+      });
+      ground.position.set(0, -.4, 0);
+      // ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
+      // world.addBody(ground);
+      // demo.addVisual(ground)
+
+      // Add the ground
+      // const sizeX = 64
+      // const sizeZ = 64
+      // const matrix = []
+      // for (let i = 0; i < sizeX; i++) {
+      //   matrix.push([])
+      //   for (let j = 0; j < sizeZ; j++) {
+      //     if (i === 0 || i === sizeX - 1 || j === 0 || j === sizeZ - 1) {
+      //       const height = 3
+      //       matrix[i].push(height)
+      //       continue
+      //     }
+
+      //     const height = Math.cos((i / sizeX) * Math.PI * 5) * Math.cos((j / sizeZ) * Math.PI * 5) * 2 + 2
+      //     matrix[i].push(height)
+      //   }
+      // }
+
+      // const heightfieldShape = new CANNON.Heightfield(matrix, {
+      //   elementSize: 100 / sizeX,
+      // })
+      // const heightfieldBody = new CANNON.Body({ mass: 0, material: groundMaterial })
+      // heightfieldBody.addShape(heightfieldShape)
+      // heightfieldBody.position.set(
+      //   // -((sizeX - 1) * heightfieldShape.elementSize) / 2,
+      //   -(sizeX * heightfieldShape.elementSize) / 2,
+      //   -1,
+      //   // ((sizeZ - 1) * heightfieldShape.elementSize) / 2
+      //   (sizeZ * heightfieldShape.elementSize) / 2
+      // )
+      // heightfieldBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0)
+      // world.addBody(heightfieldBody)
+      // demo.addVisual(heightfieldBody)
 
       // Define interactions between wheels and ground
       const wheel_ground = new CANNON.ContactMaterial(wheelMaterial, groundMaterial, {
@@ -133,6 +171,10 @@
         contactEquationStiffness: 1000,
       })
       world.addContactMaterial(wheel_ground)
+
+
+      world.addBody(ground)
+      demo.addVisual(ground)
 
       // Keybindings
       // Add force on keydown
@@ -216,7 +258,7 @@
 
     function setupWorld(demo) {
       const world = demo.getWorld()
-      world.gravity.set(0, -10, 0)
+      world.gravity.set(0, -9.82, 0)
 
       // Sweep and prune broadphase
       world.broadphase = new CANNON.SAPBroadphase(world)

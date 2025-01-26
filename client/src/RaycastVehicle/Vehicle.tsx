@@ -77,17 +77,17 @@ function Vehicle({
   }
   const wheelInfo2: WheelInfoOptions = {
     ...wheelInfo,
-    chassisConnectionPointLocal: [width / 2, height, front],
+    chassisConnectionPointLocal: [-width / 2, height, -front],
     isFrontWheel: true,
   }
   const wheelInfo3: WheelInfoOptions = {
     ...wheelInfo,
-    chassisConnectionPointLocal: [-width / 2, height, back],
+    chassisConnectionPointLocal: [width / 2, height, back],
     isFrontWheel: false,
   }
   const wheelInfo4: WheelInfoOptions = {
     ...wheelInfo,
-    chassisConnectionPointLocal: [width / 2, height, back],
+    chassisConnectionPointLocal: [width / 2, height, -back],
     isFrontWheel: false,
   }
 
@@ -99,10 +99,10 @@ function Vehicle({
     () => ({
       allowSleep: false,
       // angularVelocity,
-      args: [1.7, 1, 4],
-      mass: 500,
-      onCollide: (e) => console.log('bonk', e.body.userData),
-      position: [0, 2, 0],
+      // args: [1.7, 1, 4],
+      // mass: 500,
+      // onCollide: (e) => console.log('bonk', e.body.userData),
+      // position: [0, 2, 0],
       // rotation,
     }),
     useRef<Mesh>(null),
@@ -249,7 +249,7 @@ function Vehicle({
   })
 
   return (
-    <group ref={vehicle} //position={[0, -0.4, 0]}
+    <group ref={vehicle} position={[0, -0.4, 0]}
     >
       <Chassis ref={chassisBody} />
       <Wheel ref={wheels[0]} radius={radius} leftSide />

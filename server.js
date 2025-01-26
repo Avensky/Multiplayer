@@ -47,11 +47,13 @@ io.on("connect", (socket) => {
   const world = new World({ gravity: new Vec3(0, -9.82, 0), });
 
   // Create a ground plane
+  const groundMaterial = new Material('ground')
   const ground = new Body({
     mass: 0, // Static object
+    material: groundMaterial, // Material
     shape: new Box(new Vec3(50, 1, 50)), // Large ground box
   });
-  // ground.position.set(0, -1, 0);
+  ground.position.set(0, -.4, 0);
   world.addBody(ground);
 
 
@@ -62,36 +64,36 @@ io.on("connect", (socket) => {
   players.push(player);
 
 
-  // Build the car chassis
+  // Create a chassis body
   const chassisBody = new Body({
     mass: 500,
     rotation: new Vec3(0, -Math.PI / 4, 0),
-    position: new Vec3(0, 0, 0),
+    // position: new Vec3(0, 4, 0),
   })
-  const chassisShape = new Box(new Vec3(1.7, 1, 4))
+  const chassisShape = new Box(new Vec3(2, 0.5, 1))
   chassisBody.addShape(chassisShape)
-  // chassisBody.angularVelocity.set(0, 0, 0)
+  chassisBody.angularVelocity.set(0, 0.5, 0)
   world.addBody(chassisBody);
 
   // Create the vehicle
   const vehicle = new RaycastVehicle({
+    position: [0, -0.4, 0],
     chassisBody,
   })
 
-  const back = -1.15
-  const width = 1.2
-  const front = 1.3
-  const height = -0.04
+  // const back = -1.15
+  // const width = 1.2
+  // const front = 1.3
+  // const height = -0.04
   const radius = 0.7
 
   //define wheel options
   const wheelOptions = {
-    // rollInfluence: 0.01,
-    axleLocal: new Vec3(-1, 0, 0), // This is inverted for asymmetrical wheel models (left v. right sided)
+    directionLocal: new Vec3(0, -1, 0), // set to same as Physics Gravity
+    axleLocal: new Vec3(0, 0, 1), // This is inverted for asymmetrical
     customSlidingRotationalSpeed: -30,
     dampingCompression: 4.4,
     dampingRelaxation: 10,
-    directionLocal: new Vec3(0, -1, 0), // set to same as Physics Gravity
     frictionSlip: 2,
     maxSuspensionForce: 1e4,
     maxSuspensionTravel: 0.3,
@@ -99,21 +101,15 @@ io.on("connect", (socket) => {
     suspensionRestLength: 0.3,
     suspensionStiffness: 30,
     useCustomSlidingRotationalSpeed: true,
-    chassisConnectionPointLocal: new Vec3(0, 0, 0)
+    chassisConnectionPointLocal: new Vec3(-1, 0, 1)
+    // rollInfluence: 0.01, // only in cannon-es
   }
 
   //add wheels
-  wheelOptions.chassisConnectionPointLocal.set(new Vec3(-width / 2, height, front))
-  vehicle.addWheel(wheelOptions)
-
-  wheelOptions.chassisConnectionPointLocal.set(new Vec3(width / 2, height, front))
-  vehicle.addWheel(wheelOptions)
-
-  wheelOptions.chassisConnectionPointLocal.set(new Vec3(-width / 2, height, back))
-  vehicle.addWheel(wheelOptions)
-
-  wheelOptions.chassisConnectionPointLocal.set(new Vec3(width / 2, height, back))
-  vehicle.addWheel(wheelOptions)
+  vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new Vec3(-1, 0, 1) }); // front left
+  vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new Vec3(-1, 0, -1) }); // front right
+  vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new Vec3(1, 0, 1) }); // rear left
+  vehicle.addWheel({ ...wheelOptions, chassisConnectionPointLocal: new Vec3(1, 0, -1) }); // rear right
 
   vehicle.addToWorld(world)
 
@@ -166,7 +162,6 @@ io.on("connect", (socket) => {
   //   }
   // }
 
-  const groundMaterial = new Material('ground')
   // const heightfieldShape = new Heightfield(matrix, {
   //   elementSize: 100 / sizeX,
   // })
@@ -300,7 +295,7 @@ io.on("connect", (socket) => {
       // Add more properties as needed
     };
     // console.log('data: ', vehicle);
-    console.log('data: ', vehicle.chassisBody.position.y);
+    // console.log('data: ', vehicle.chassisBody.position.y);
     socket.emit('physicsUpdate', vehicleData);
   };
 
